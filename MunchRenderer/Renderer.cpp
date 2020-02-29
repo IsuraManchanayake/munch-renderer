@@ -190,7 +190,7 @@ HRESULT Renderer::OnRender() {
 
   hr = CreateDeviceResources();
   if (SUCCEEDED(hr)) {
-    canvas->update();
+    canvas->refresh();
 
     m_pRenderTarget->BeginDraw();
 

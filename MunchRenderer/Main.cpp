@@ -3,26 +3,16 @@
 #include "Renderer.h"
 
 struct BoxCanvas : Canvas {
-  BoxCanvas(size_t width, size_t height) : Canvas(width, height) {
-    for (size_t y = 0; y < height; y++) {
-      for (size_t x = 0; x < width; x++) {
-        get(x, y).set(55, 55, 55);
-      }
-    }
-  }
+
+  BoxCanvas(size_t width, size_t height) : Canvas(width, height) {}
   ~BoxCanvas() {}
 
   void update() {
     clear();
-    //for (size_t y = height / 4; y <= (3 * height) / 4; y++) {
-    //  for (size_t x = width / 4; x <= (3 * width) / 4; x++) {
-    //    get(x, y).set(200, 0, 128);
-    //  }
-    //}
-    //line(50, 50, 500, 600);
-    //line(50, 200, 50, 600);
-    //line(50, 100, 500, 100);
-    triangle(100, 100, 500, 300, 300, 500, defaultStroke);
+    Vertex vx0{{200, 150, 0}, {255, 0, 0}};
+    Vertex vx1{{600, 150, 0}, {0, 255, 0}};
+    Vertex vx2{{400, 450, 0}, {0, 0, 255}};
+    triangle(vx0, vx1, vx2);
   }
 };
 

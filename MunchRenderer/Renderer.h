@@ -2,6 +2,7 @@
 
 #include "Canvas.h"
 #include "Common.h"
+#include "Resource.h"
 
 // C RunTime Header Files:
 #include <malloc.h>
