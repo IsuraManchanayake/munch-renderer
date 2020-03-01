@@ -9,10 +9,12 @@ struct BoxCanvas : Canvas {
 
   void update() {
     clear();
-    Vertex vx0{{200, 150, 0}, {255, 0, 0}};
-    Vertex vx1{{600, 150, 0}, {0, 255, 0}};
-    Vertex vx2{{400, 450, 0}, {0, 0, 255}};
-    triangle(vx0, vx1, vx2);
+    //Vertex vx0{{200, 150, 0}, {255, 0, 0}};
+    //Vertex vx1{{600, 150, 0}, {0, 255, 0}};
+    //Vertex vx2{{400, 450, 0}, {0, 0, 255}};
+    //renderMode = RenderMode::WireFrame;
+    //triangle(vx0, vx1, vx2);
+    model("african_head/african_head.obj");
   }
 };
 

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="obj">
+      <UniqueIdentifier>{208eb8de-2f4f-43a4-93e7-198854a94f75}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h">
@@ -42,6 +45,15 @@
     <ClInclude Include="Color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TGAImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas.cpp">
@@ -59,6 +71,12 @@
     <ClCompile Include="Color.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TGAImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MunchRenderer.rc">
@@ -72,5 +90,66 @@
     <Image Include="MunchRenderer.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="african_head\african_head_SSS.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="african_head\african_head_diffuse.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_inner_diffuse.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_inner_nm.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_inner_nm_tangent.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_inner_spec.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_outer_diffuse.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_outer_gloss.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_outer_nm.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_outer_nm_tangent.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_eye_outer_spec.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_nm.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_nm_tangent.tga">
+      <Filter>obj</Filter>
+    </Image>
+    <Image Include="african_head\african_head_spec.tga">
+      <Filter>obj</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="african_head\african_head.obj">
+      <Filter>obj</Filter>
+    </Object>
+    <Object Include="african_head\african_head_eye_inner.obj">
+      <Filter>obj</Filter>
+    </Object>
+    <Object Include="african_head\african_head_eye_outer.obj">
+      <Filter>obj</Filter>
+    </Object>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="african_head\readme.txt">
+      <Filter>obj</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

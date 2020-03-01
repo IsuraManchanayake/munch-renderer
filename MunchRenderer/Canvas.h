@@ -34,6 +34,7 @@ protected:
                 const Color &fill, const Color &stroke = defaultStroke);
   void triangle(const vec2i &v0, const vec2i &v1, const vec2i &v2,
                 const Color &fill, const Color &stroke = defaultStroke);
+  void model(const char *filename);
 
   virtual void update() = 0;
 
@@ -42,6 +43,7 @@ private:
 
 protected:
   Color *data;
+  float *zbuf;
   Renderer *renderer;
   RenderMode renderMode;
   size_t width;

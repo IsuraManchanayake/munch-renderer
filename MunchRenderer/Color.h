@@ -13,7 +13,7 @@ struct Color {
       byte a;
     };
     uint32_t col;
-    byte c[4];
+    byte bgra[4];
   };
 
   Color(byte r, byte g, byte b, byte a = 255) : r(r), g(g), b(b), a(a) {}
@@ -29,6 +29,8 @@ struct Color {
     // to implement
   }
   static Color lerp(const Color &col0, const Color &col1, float f);
+  static Color bary(const Color &col0, const Color &col1, const Color &col2,
+      float r1, float r2, float r3);
 };
 
 extern Color defaultBackground;
