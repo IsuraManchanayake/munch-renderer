@@ -71,6 +71,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!MunchRenderer/african_head/*.obj
 *.iobj
 *.pch
 *.pdb
