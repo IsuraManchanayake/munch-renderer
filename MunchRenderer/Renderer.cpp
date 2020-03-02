@@ -224,9 +224,11 @@ HRESULT Renderer::OnRender() {
     rectf.bottom = height;
     rectf.right = width;
     // Flip vertically
-    m_pRenderTarget->SetTransform(
-        D2D1::Matrix3x2F::Translation(0, 0.f - height) *
-        D2D1::Matrix3x2F::Scale(D2D1::Size(1.f, -1.f)));
+    if (canvas->flipVertical) {
+      m_pRenderTarget->SetTransform(
+          D2D1::Matrix3x2F::Translation(0, 0.f - height) *
+          D2D1::Matrix3x2F::Scale(D2D1::Size(1.f, -1.f)));
+    }
     if (_backBufferBmp) {
       m_pRenderTarget->DrawBitmap(_backBufferBmp, rectf);
       _backBufferBmp->Release();

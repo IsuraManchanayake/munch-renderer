@@ -1,6 +1,7 @@
 #include "Canvas.h"
 #include "Math.h"
 #include "Model.h"
+#include "TGAImage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9,8 +10,8 @@
 
 Canvas::Canvas(size_t width, size_t height)
     : data(nullptr), zbuf(nullptr), renderer(nullptr),
-      renderMode(RenderMode::Raster), width(width), height(height),
-      deltaTime(0.f), deltaTimeNano(0),
+      renderMode(RenderMode::Raster), flipVertical(true), width(width),
+      height(height), deltaTime(0.f), deltaTimeNano(0),
       currentTImeNano(Timer<std::chrono::nanoseconds>::current()) {
   data = new Color[width * height];
   zbuf = new float[width * height];
@@ -38,6 +39,10 @@ void Canvas::clear(const Color &color) {
       zbuf[x + y * width] = -std::numeric_limits<float>::infinity();
     }
   }
+}
+
+void Canvas::setFlipVertical(bool flipVertical) {
+  this->flipVertical = flipVertical;
 }
 
 void Canvas::line(const Vertex &vx0, const Vertex &vx1) {
@@ -266,6 +271,41 @@ void Canvas::model(const char *filename) {
     // if (draw) {
     triangle(tr[0], tr[1], tr[2]);
     //}
+  }
+}
+
+void Canvas::image(const Image &image, const vec2i &pos, const vec2i &size) {
+  size_t bminx = clamp<size_t>(pos.x, 0, width - 1);
+  size_t bminy = clamp<size_t>(pos.y, 0, height - 1);
+  size_t bmaxx =
+      clamp<size_t>(static_cast<size_t>(pos.x) + size.x - 1, 0, width - 1);
+  size_t bmaxy =
+      clamp<size_t>(static_cast<size_t>(pos.y) + size.y - 1, 0, height - 1);
+  for (size_t y = bminy; y <= bmaxy; y++) {
+    for (size_t x = bminx; x <= bmaxx; x++) {
+      size_t x_ = x - pos.x;
+      size_t y_ = y - pos.y;
+      size_t imw = image.width;
+      size_t imh = image.height;
+      float imx = (static_cast<float>(x_) * imw) / size.x;
+      float imy = (static_cast<float>(y_) * imh) / size.y;
+      float imxfrac = fraction(imx);
+      float imyfrac = fraction(imy);
+      size_t imx0 = floor(imx);
+      size_t imy0 = floor(imy);
+      size_t imx1 = imx0 + 1;
+      size_t imy1 = imy0 + 1;
+      Color c00 = image.data[imx0 + imy0 * imw];
+      Color c10 = image.data[imx1 + imy0 * imw];
+      Color c01 = image.data[imx0 + imy1 * imw];
+      Color c11 = image.data[imx1 + imy1 * imw];
+      Color cxy {};
+      for (size_t i = 0; i < 4; i++) {
+        cxy.bgra[i] = lerp(lerp(c00.bgra[i], c10.bgra[i], imxfrac),
+                           lerp(c01.bgra[i], c11.bgra[i], imxfrac), imyfrac);
+      }
+      data[x + y * width] = cxy;
+    }
   }
 }
 

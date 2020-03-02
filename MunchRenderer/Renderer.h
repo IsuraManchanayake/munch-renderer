@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Canvas.h"
 #include "Common.h"
 #include "Resource.h"
 
@@ -12,6 +11,8 @@
 #include <wchar.h>
 
 #include <utility>
+
+#include "Canvas.h"
 
 class Renderer {
 public:

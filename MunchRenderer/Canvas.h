@@ -2,12 +2,13 @@
 
 #include "Color.h"
 #include "Common.h"
-#include "Vertex.h"
 #include "Vector.h"
+#include "Vertex.h"
 
 #include <cinttypes>
 
 class Renderer;
+class Image;
 
 enum class RenderMode { Raster, WireFrame };
 
@@ -23,6 +24,7 @@ protected:
   const Color &get(size_t x, size_t y) const;
 
   void clear(const Color &color = defaultBackground);
+  void setFlipVertical(bool flipVertical);
 
   void line(const Vertex &vx0, const Vertex &vx1);
   void line(int x0, int y0, int x1, int y1,
@@ -35,6 +37,7 @@ protected:
   void triangle(const vec2i &v0, const vec2i &v1, const vec2i &v2,
                 const Color &fill, const Color &stroke = defaultStroke);
   void model(const char *filename);
+  void image(const Image &image, const vec2i &pos, const vec2i &size);
 
   virtual void update() = 0;
 
@@ -46,6 +49,7 @@ protected:
   float *zbuf;
   Renderer *renderer;
   RenderMode renderMode;
+  bool flipVertical;
   size_t width;
   size_t height;
   float deltaTime;
