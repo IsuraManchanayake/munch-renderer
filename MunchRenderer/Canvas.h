@@ -6,11 +6,12 @@
 #include "Vertex.h"
 
 #include <cinttypes>
+#include <string>
 
 class Renderer;
 class Image;
 
-enum class RenderMode { Raster, WireFrame };
+enum class RenderMode { TextureRaster, SolidColorRaster, WireFrame };
 
 class Canvas {
 public:
@@ -31,12 +32,12 @@ protected:
             const Color &stroke = defaultStroke);
   void line(const vec2i &v0, const vec2i &v1,
             const Color &stroke = defaultStroke);
-  void triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2);
+  void triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2, const Image& texture);
   void triangle(int x0, int y0, int x1, int y1, int x2, int y2,
                 const Color &fill, const Color &stroke = defaultStroke);
   void triangle(const vec2i &v0, const vec2i &v1, const vec2i &v2,
                 const Color &fill, const Color &stroke = defaultStroke);
-  void model(const char *filename);
+  void model(const std::wstring& name);
   void image(const Image &image, const vec2i &pos, const vec2i &size);
 
   virtual void update() = 0;
@@ -47,13 +48,20 @@ private:
 protected:
   Color *data;
   float *zbuf;
+  
   Renderer *renderer;
   RenderMode renderMode;
+  
   bool flipVertical;
+  bool drawBoundBox;
+  
   size_t width;
   size_t height;
+
   float deltaTime;
   size_t deltaTimeNano;
+  
+  vec3f light;
 
 private:
   size_t currentTImeNano;

@@ -10,9 +10,11 @@
 
 Canvas::Canvas(size_t width, size_t height)
     : data(nullptr), zbuf(nullptr), renderer(nullptr),
-      renderMode(RenderMode::Raster), flipVertical(true), width(width),
-      height(height), deltaTime(0.f), deltaTimeNano(0),
-      currentTImeNano(Timer<std::chrono::nanoseconds>::current()) {
+      renderMode(RenderMode::SolidColorRaster), flipVertical(true),
+      drawBoundBox(false), width(width), height(height), deltaTime(0.f),
+      deltaTimeNano(0),
+      currentTImeNano(Timer<std::chrono::nanoseconds>::current()),
+      light(0.f, 0.f, 1.f) {
   data = new Color[width * height];
   zbuf = new float[width * height];
 }
@@ -120,54 +122,15 @@ void Canvas::line(const vec2i &v0, const vec2i &v1, const Color &stroke) {
   line(v0.x, v0.y, v1.x, v1.y, stroke);
 }
 
-void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2) {
-  switch (renderMode) {
-  case RenderMode::WireFrame: {
+void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
+                      const Image &texture) {
+  if (renderMode == RenderMode::WireFrame) {
     line(vx0, vx1);
     line(vx1, vx2);
     line(vx2, vx0);
-    break;
-  }
-  case RenderMode::Raster: {
+  } else if (renderMode == RenderMode::SolidColorRaster ||
+             renderMode == RenderMode::TextureRaster) {
     std::array<Vertex, 3> vxa{vx0, vx1, vx2};
-#if 0
-    std::sort(vxa.begin(), vxa.end(),
-              [](const Vertex &vxl, const Vertex &vxr) -> bool {
-                return vxl.pos.y > vxr.pos.y;
-              });
-    float x0 = static_cast<float>(vxa[0].pos.x);
-    float x1 = static_cast<float>(vxa[1].pos.x);
-    float x2 = static_cast<float>(vxa[2].pos.x);
-    float y0 = static_cast<float>(vxa[0].pos.y);
-    float y1 = static_cast<float>(vxa[1].pos.y);
-    float y2 = static_cast<float>(vxa[2].pos.y);
-    Color &col0 = vxa[0].col;
-    Color &col1 = vxa[1].col;
-    Color &col2 = vxa[2].col;
-    float t0 = norm(y1, y2, y0);
-    float x_ = lerp(x2, x0, t0);
-    Color col_ = Color::lerp(vxa[2].col, vxa[0].col, t0);
-    for (int y = y1; y >= y2; y--) {
-      float t1 = norm(y, y1, y2);
-      float x1_ = lerp(x1, x2, t1);
-      float x2_ = lerp(x_, x2, t1);
-      Color col1_ = Color::lerp(col1, col2, t1);
-      Color col2_ = Color::lerp(col_, col2, t1);
-      Vertex vx1_{{x1_, y, 0.f}, col1_};
-      Vertex vx2_{{x2_, y, 0.f}, col2_};
-      line(vx1_, vx2_);
-    }
-    for (int y = y1 + 1; y <= y0; y++) {
-      float t1 = norm(y, y0, y1);
-      float x1_ = lerp(x0, x1, t1);
-      float x2_ = lerp(x0, x_, t1);
-      Color col1_ = Color::lerp(col0, col1, t1);
-      Color col2_ = Color::lerp(col0, col_, t1);
-      Vertex vx1_{{x1_, y, 0.f}, col1_};
-      Vertex vx2_{{x2_, y, 0.f}, col2_};
-      line(vx1_, vx2_);
-    }
-#endif
     vec2i minb{width - 1, height - 1};
     vec2i maxb{0, 0};
     for (const auto &v : vxa) {
@@ -176,10 +139,12 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2) {
       maxb.x = std::max(maxb.x, static_cast<int>(v.pos.x));
       maxb.y = std::max(maxb.y, static_cast<int>(v.pos.y));
     }
-    // line(minb.x, minb.y, minb.x, maxb.y, {255, 0, 0});
-    // line(minb.x, minb.y, maxb.x, minb.y, {255, 0, 0});
-    // line(minb.x, maxb.y, maxb.x, maxb.y, {255, 0, 0});
-    // line(maxb.x, minb.y, maxb.x, maxb.y, {255, 0, 0});
+    if (drawBoundBox) {
+      line(minb.x, minb.y, minb.x, maxb.y, {255, 0, 0});
+      line(minb.x, minb.y, maxb.x, minb.y, {255, 0, 0});
+      line(minb.x, maxb.y, maxb.x, maxb.y, {255, 0, 0});
+      line(maxb.x, minb.y, maxb.x, maxb.y, {255, 0, 0});
+    }
     for (size_t y = minb.y; y <= maxb.y; y++) {
       for (size_t x = minb.x; x <= maxb.x; x++) {
         vec3f p{x, y, 0.0};
@@ -191,14 +156,19 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2) {
           float z = r0 * vx0.pos.z + r1 * vx1.pos.z + r2 * vx2.pos.z;
           if (zbuf[x + y * width] < z) {
             zbuf[x + y * width] = z;
-            data[x + y * width] =
-                Color::bary(vx0.col, vx1.col, vx2.col, r0, r1, r2);
+            if (renderMode == RenderMode::TextureRaster) {
+              vec2f uv = r0 * vx0.tex + r1 * vx1.tex + r2 * vx2.tex;
+              vec3f normal = r0 * vx0.nrm + r1 * vx1.nrm + r2 * vx2.nrm;
+              float intensity = normal.normal().dot(light);
+              data[x + y * width] = intensity * texture.uv(uv);
+            } else {
+              data[x + y * width] =
+                  Color::bary(vx0.col, vx1.col, vx2.col, r0, r1, r2);
+            }
           }
         }
       }
     }
-    break;
-  }
   }
 }
 
@@ -211,7 +181,7 @@ void Canvas::triangle(int x0, int y0, int x1, int y1, int x2, int y2,
     line(x2, y2, x0, y0, stroke);
     break;
   }
-  case RenderMode::Raster: {
+  case RenderMode::SolidColorRaster: {
     vec2i v0{x0, y0};
     vec2i v1{x1, y1};
     vec2i v2{x2, y2};
@@ -249,28 +219,23 @@ void Canvas::triangle(const vec2i &v0, const vec2i &v1, const vec2i &v2,
   triangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, fill, defaultStroke);
 }
 
-void Canvas::model(const char *filename) {
-  Model model(filename);
-  model.load();
-  // renderMode = RenderMode::WireFrame;
-  vec3f light{0.f, 0.f, 1.f};
-  for (auto &tr : model.trs) {
-    bool draw = true;
+void Canvas::model(const std::wstring &name) {
+  Model* model = Model::loadModel(name);
+  float size = static_cast<float>(std::min(width, height)) / 2.f;
+  for (auto &tr : model->trs) {
+    std::array<Vertex, 3> trcpys(tr);
     for (size_t i = 0; i < 3; i++) {
-      tr[i].pos =
-          tr[i].pos.scale({300.f, 300.f, 300.f}).translate({400.f, 300.f, 0.f});
-      float value = tr[i].nrm.normal().dot(light);
-      /*if (value < 0.f) {
-        draw = false;
-        break;
-      }*/
-      value = map(value, 0.f, 1.f, 0.f, 256.f);
-      byte intensity = static_cast<byte>(value);
-      tr[i].col = {intensity, intensity, intensity, 255};
+      trcpys[i].pos = tr[i]
+                      .pos.scale({size, size, size})
+                      .translate({width / 2.f, height / 2.f, 0.f});
+      if (renderMode == RenderMode::SolidColorRaster) {
+        float value = tr[i].nrm.normal().dot(light);
+        value = map(value, 0.f, 1.f, 0.f, 256.f);
+        byte intensity = static_cast<byte>(value);
+        trcpys[i].col = {intensity, intensity, intensity, 255};
+      }
     }
-    // if (draw) {
-    triangle(tr[0], tr[1], tr[2]);
-    //}
+    triangle(trcpys[0], trcpys[1], trcpys[2], model->texture);
   }
 }
 
@@ -293,13 +258,13 @@ void Canvas::image(const Image &image, const vec2i &pos, const vec2i &size) {
       float imyfrac = fraction(imy);
       size_t imx0 = floor(imx);
       size_t imy0 = floor(imy);
-      size_t imx1 = imx0 + 1;
-      size_t imy1 = imy0 + 1;
+      size_t imx1 = (imx0 == imw - 1) ? imx0 : imx0 + 1;
+      size_t imy1 = (imy0 == imh - 1) ? imy0 : imy0 + 1;
       Color c00 = image.data[imx0 + imy0 * imw];
       Color c10 = image.data[imx1 + imy0 * imw];
       Color c01 = image.data[imx0 + imy1 * imw];
       Color c11 = image.data[imx1 + imy1 * imw];
-      Color cxy {};
+      Color cxy{};
       for (size_t i = 0; i < 4; i++) {
         cxy.bgra[i] = lerp(lerp(c00.bgra[i], c10.bgra[i], imxfrac),
                            lerp(c01.bgra[i], c11.bgra[i], imxfrac), imyfrac);

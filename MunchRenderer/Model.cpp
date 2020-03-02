@@ -4,10 +4,25 @@
 #include <ios>
 #include <limits>
 
-Model::Model(const char *filename) : filename(filename) {}
+std::unordered_map<std::wstring, Model *> Model::modelCache;
 
-void Model::load() {
-  std::ifstream ifs(filename);
+Model* Model::loadModel(const std::wstring &name) {
+  auto ptr = modelCache.find(name);
+  if (ptr != modelCache.end()) {
+    return ptr->second;
+  }
+  Model *model = new Model(name);
+  model->loadobj();
+  model->loadtex();
+  modelCache[name] = model;
+  return model;
+}
+
+Model::Model(std::wstring name) : name(std::move(name)) {}
+
+void Model::loadobj() {
+  std::wstring objfname = name + L".obj";
+  std::ifstream ifs(objfname);
   if (!ifs.is_open()) {
     return;
   }
@@ -48,6 +63,11 @@ void Model::load() {
       continue;
     }
   }
+}
+
+void Model::loadtex() {
+  std::wstring texfname = name + L"_diffuse.tga";
+  texture = TGAImage::load(texfname);
 }
 
 void Model::translate(const vec3f &v) {

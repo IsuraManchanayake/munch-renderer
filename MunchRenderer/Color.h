@@ -2,6 +2,8 @@
 
 #include <cinttypes>
 
+#include "Math.h"
+
 typedef uint8_t byte;
 
 struct Color {
@@ -30,7 +32,18 @@ struct Color {
   }
   static Color lerp(const Color &col0, const Color &col1, float f);
   static Color bary(const Color &col0, const Color &col1, const Color &col2,
-      float r1, float r2, float r3);
+                    float r1, float r2, float r3);
+  Color operator*(float intensity) const {
+    intensity = clamp<float>(intensity, 0.f, 1.f);
+    Color res{};
+    for (size_t i = 0; i < 4; i++) {
+      res.bgra[i] = static_cast<byte>(bgra[i] * intensity);
+    }
+    return res;
+  }
+  friend Color operator*(float intensity, const Color& col) {
+    return col * intensity;
+  }
 };
 
 extern Color defaultBackground;

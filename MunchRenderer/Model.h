@@ -1,15 +1,19 @@
 #pragma once
 
+#include "TGAImage.h"
 #include "Vertex.h"
 
-#include <vector>
 #include <fstream>
-#include <string>
 #include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 struct Model {
-  Model(const char *filename);
-  void load();
+  static Model* loadModel(const std::wstring& name);
+  Model(std::wstring name);
+  void loadobj();
+  void loadtex();
 
   void translate(const vec3f &v);
   void scale(const vec3f &v);
@@ -19,5 +23,7 @@ struct Model {
 
   std::vector<vec3f> vs;
   std::vector<std::array<Vertex, 3>> trs;
-  std::string filename;
+  Image texture;
+  std::wstring name;
+  static std::unordered_map<std::wstring, Model *> modelCache;
 };

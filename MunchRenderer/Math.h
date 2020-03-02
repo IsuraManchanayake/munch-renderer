@@ -1,5 +1,6 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 template <typename T> inline T clamp(T x, T min, T max) {
