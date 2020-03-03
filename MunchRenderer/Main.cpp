@@ -19,11 +19,13 @@ struct BoxCanvas : Canvas {
     // Vertex vx1{{600, 150, 0}, {0, 255, 0}};
     // Vertex vx2{{400, 450, 0}, {0, 0, 255}};
     renderMode = RenderMode::TextureRaster;
+    //drawBoundBox = true;
     // triangle(vx0, vx1, vx2);
     static const float speed = .3f;
     angle += deltaTime * speed;
     angle = fmod(angle, M_PI);
     light = {cos(angle), 0.f, sin(angle)};
+    //model(L"monkey/monkey");
     model(L"african_head/african_head");
     // static Image img =
     // TGAImage::load(L"african_head/african_head_diffuse.tga"); Image img =

@@ -63,6 +63,9 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
 
   Vector<DIM, T> translate(const Vector<DIM, T> &v) const;
   Vector<DIM, T> scale(const Vector<DIM, T> &v) const;
+  Vector<DIM, T> rotx(float a) const;
+  Vector<DIM, T> roty(float a) const;
+  Vector<DIM, T> rotz(float a) const;
 };
 
 #define TEMPLATE_HEADER template <size_t DIM, typename T>
@@ -193,6 +196,24 @@ Vector<DIM, T> Vector<DIM, T>::translate(const Vector<DIM, T> &v) const {
 TEMPLATE_HEADER
 Vector<DIM, T> Vector<DIM, T>::scale(const Vector<DIM, T> &v) const {
   return this->mul(v);
+}
+
+TEMPLATE_HEADER
+Vector<DIM, T> Vector<DIM, T>::rotx(float a) const {
+  return {this->x, this->y * cos(a) + this->z * sin(a),
+          -this->y * sin(a) + this->z * cos(a)};
+}
+
+TEMPLATE_HEADER
+Vector<DIM, T> Vector<DIM, T>::roty(float a) const {
+  return {this->x * cos(a) - this->z * sin(a), this->y,
+          this->x * sin(a) + this->z * cos(a)};
+}
+
+TEMPLATE_HEADER
+Vector<DIM, T> Vector<DIM, T>::rotz(float a) const {
+  return {this->x * cos(a) + this->y * sin(a),
+          -this->x * sin(a) + this->y * cos(a), this->z};
 }
 
 typedef typename Vector<2, int> vec2i;

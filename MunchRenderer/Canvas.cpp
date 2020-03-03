@@ -57,7 +57,8 @@ void Canvas::line(const Vertex &vx0, const Vertex &vx1) {
   line(x0, y0, x1, y1, col0, col1);
 }
 
-void Canvas::line(int x0, int y0, int x1, int y1, const Color &col0, const Color &col1) {
+void Canvas::line(int x0, int y0, int x1, int y1, const Color &col0,
+                  const Color &col1) {
   int dx = std::abs(x0 - x1);
   int dy = std::abs(y0 - y1);
   if (dx == 0 && dy == 0) {
@@ -103,10 +104,20 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
     vec2i minb{width - 1, height - 1};
     vec2i maxb{0, 0};
     for (const auto &v : vxa) {
-      minb.x = std::min(minb.x, static_cast<int>(v.pos.x));
-      minb.y = std::min(minb.y, static_cast<int>(v.pos.y));
-      maxb.x = std::max(maxb.x, static_cast<int>(v.pos.x));
-      maxb.y = std::max(maxb.y, static_cast<int>(v.pos.y));
+      int x = v.pos.x;
+      int y = v.pos.y;
+      if (x < minb.x) {
+        minb.x = std::max(x, 0);
+      }
+      if (y < minb.y) {
+        minb.y = std::max(y, 0);
+      }
+      if (x > maxb.x) {
+        maxb.x = std::min(x, (int)width - 1);
+      }
+      if (y > maxb.y) {
+        maxb.y = std::min(y, (int)height - 1);
+      }
     }
     if (drawBoundBox) {
       line(minb.x, minb.y, minb.x, maxb.y, {255, 0, 0}, {255, 0, 0});
@@ -157,6 +168,7 @@ void Canvas::model(const std::wstring &name) {
     for (size_t i = 0; i < 3; i++) {
       trcpys[i].pos = tr[i]
                           .pos.scale({size, size, size})
+                          //.rotx(M_PI_2)
                           .translate({width / 2.f, height / 2.f, 0.f});
       if (renderMode == RenderMode::SolidColorRaster) {
         float value = tr[i].nrm.normal().dot(light);

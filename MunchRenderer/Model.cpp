@@ -6,7 +6,7 @@
 
 std::unordered_map<std::wstring, Model *> Model::modelCache;
 
-Model* Model::loadModel(const std::wstring &name) {
+Model *Model::loadModel(const std::wstring &name) {
   auto ptr = modelCache.find(name);
   if (ptr != modelCache.end()) {
     return ptr->second;
@@ -44,21 +44,42 @@ void Model::loadobj() {
       ifs >> vn.x >> vn.y >> vn.z;
       vns.emplace_back(vn);
     } else if (s == "f") {
-      std::array<Vertex, 3> tr;
-      for (size_t i = 0; i < 3; i++) {
-        std::string ptn;
-        ifs >> ptn;
+      std::string line;
+      std::getline(ifs, line);
+      std::vector<std::string> pts;
+      StringUtils::split(pts, line, ' ');
+      std::vector<Vertex> poly(pts.size() - 1);
+      for (size_t i = 0; i < pts.size() - 1; i++) {
+        std::string ptn = pts[i + 1];
         std::vector<std::string> splitted;
         StringUtils::split(splitted, ptn, '/');
-        size_t pidx = StringUtils::lexical_cast<size_t>(splitted[0]) - 1;
-        size_t tidx = StringUtils::lexical_cast<size_t>(splitted[1]) - 1;
-        size_t nidx = StringUtils::lexical_cast<size_t>(splitted[2]) - 1;
-        tr[i].pos = vs[pidx];
-        tr[i].tex = vts[tidx];
-        tr[i].nrm = vns[nidx];
-        tr[i].col = {255, 255, 255, 255};
+        size_t pidx = StringUtils::lexical_cast<size_t>(splitted[0]);
+        size_t tidx = StringUtils::lexical_cast<size_t>(splitted[1]);
+        size_t nidx = StringUtils::lexical_cast<size_t>(splitted[2]);
+        poly[i].pos = vs[pidx - 1];
+        poly[i].tex = tidx > 0 ? vts[tidx - 1] : vec2f{};
+        poly[i].nrm = nidx > 0 ? vns[nidx - 1] : vec3f{};
+        poly[i].col = {255, 255, 255, 255};
       }
-      trs.push_back(tr);
+      for (size_t i = 0; i < poly.size() - 2; i++) {
+        std::array<Vertex, 3> tr{poly[0], poly[i + 1], poly[i + 2]};
+        trs.emplace_back(tr);
+      }
+      // std::array<Vertex, 3> tr;
+      // for (size_t i = 0; i < 3; i++) {
+      //  std::string ptn;
+      //  ifs >> ptn;
+      //  std::vector<std::string> splitted;
+      //  StringUtils::split(splitted, ptn, '/');
+      //  size_t pidx = StringUtils::lexical_cast<size_t>(splitted[0]);
+      //  size_t tidx = StringUtils::lexical_cast<size_t>(splitted[1]);
+      //  size_t nidx = StringUtils::lexical_cast<size_t>(splitted[2]);
+      //  tr[i].pos = vs[pidx - 1];
+      //  tr[i].tex = tidx > 0 ? vts[tidx - 1] : vec2f{};
+      //  tr[i].nrm = nidx > 0 ? vns[nidx - 1] : vec3f{};
+      //  tr[i].col = {255, 255, 255, 255};
+      //}
+      // trs.push_back(tr);
     } else {
       continue;
     }
@@ -68,6 +89,9 @@ void Model::loadobj() {
 void Model::loadtex() {
   std::wstring texfname = name + L"_diffuse.tga";
   texture = TGAImage::load(texfname);
+  if (!texture.good) {
+    texture = Image::solidColor(1, 1, Col::white);
+  }
 }
 
 void Model::translate(const vec3f &v) {
@@ -86,8 +110,26 @@ void Model::scale(const vec3f &v) {
   }
 }
 
-void Model::rotx(float a) {}
+void Model::rotx(float a) {
+  for (auto &tr : trs) {
+    for (auto &vx : tr) {
+      vx.pos = vx.pos.rotx(a);
+    }
+  }
+}
 
-void Model::roty(float a) {}
+void Model::roty(float a) {
+  for (auto &tr : trs) {
+    for (auto &vx : tr) {
+      vx.pos = vx.pos.roty(a);
+    }
+  }
+}
 
-void Model::rotz(float a) {}
+void Model::rotz(float a) {
+  for (auto &tr : trs) {
+    for (auto &vx : tr) {
+      vx.pos = vx.pos.rotz(a);
+    }
+  }
+}
