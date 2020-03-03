@@ -52,10 +52,14 @@ void Canvas::line(const Vertex &vx0, const Vertex &vx1) {
   int y0 = static_cast<int>(vx0.pos.y);
   int x1 = static_cast<int>(vx1.pos.x);
   int y1 = static_cast<int>(vx1.pos.y);
+  const Color &col0 = vx0.col;
+  const Color &col1 = vx1.col;
+  line(x0, y0, x1, y1, col0, col1);
+}
+
+void Canvas::line(int x0, int y0, int x1, int y1, const Color &col0, const Color &col1) {
   int dx = std::abs(x0 - x1);
   int dy = std::abs(y0 - y1);
-  Color col0 = vx0.col;
-  Color col1 = vx1.col;
   if (dx == 0 && dy == 0) {
     return;
   }
@@ -68,58 +72,23 @@ void Canvas::line(const Vertex &vx0, const Vertex &vx1) {
   if (x0 > x1) {
     std::swap(x0, x1);
     std::swap(y0, y1);
-    std::swap(col0, col1);
   }
   float grad = static_cast<float>(y1 - y0) / (x1 - x0);
   int vwidth = swapped ? height : width;
   int vheight = swapped ? width : height;
   int xmin = clamp<int>(x0, 0, vwidth - 1);
   int xmax = clamp<int>(x1, 0, vwidth - 1);
+  float t = 0.f;
+  float tinc = 1.f / (x1 - x0);
   for (int x = xmin; x <= xmax; x++) {
     int y = clamp<int>(y0 + (x - x0) * grad, 0, vheight - 1);
-    float t = norm(x, x0, x1);
-    Color col = Color::lerp(col0, col1, t);
+    Color col = Color::lerp(col0, col1, t += tinc);
     if (swapped) {
       data[y + x * width] = col;
     } else {
       data[x + y * width] = col;
     }
   }
-}
-
-void Canvas::line(int x0, int y0, int x1, int y1, const Color &stroke) {
-  int dx = std::abs(x0 - x1);
-  int dy = std::abs(y0 - y1);
-  if (dx == 0 && dy == 0) {
-    return;
-  }
-  bool swapped = false;
-  if (dy > dx) {
-    std::swap(x0, y0);
-    std::swap(x1, y1);
-    swapped = true;
-  }
-  if (x0 > x1) {
-    std::swap(x0, x1);
-    std::swap(y0, y1);
-  }
-  float grad = static_cast<float>(y1 - y0) / (x1 - x0);
-  int vwidth = swapped ? height : width;
-  int vheight = swapped ? width : height;
-  int xmin = clamp<int>(x0, 0, vwidth - 1);
-  int xmax = clamp<int>(x1, 0, vwidth - 1);
-  for (int x = xmin; x <= xmax; x++) {
-    int y = clamp<int>(y0 + (x - x0) * grad, 0, vheight - 1);
-    if (swapped) {
-      data[y + x * width] = stroke;
-    } else {
-      data[x + y * width] = stroke;
-    }
-  }
-}
-
-void Canvas::line(const vec2i &v0, const vec2i &v1, const Color &stroke) {
-  line(v0.x, v0.y, v1.x, v1.y, stroke);
 }
 
 void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
@@ -140,10 +109,10 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
       maxb.y = std::max(maxb.y, static_cast<int>(v.pos.y));
     }
     if (drawBoundBox) {
-      line(minb.x, minb.y, minb.x, maxb.y, {255, 0, 0});
-      line(minb.x, minb.y, maxb.x, minb.y, {255, 0, 0});
-      line(minb.x, maxb.y, maxb.x, maxb.y, {255, 0, 0});
-      line(maxb.x, minb.y, maxb.x, maxb.y, {255, 0, 0});
+      line(minb.x, minb.y, minb.x, maxb.y, {255, 0, 0}, {255, 0, 0});
+      line(minb.x, minb.y, maxb.x, minb.y, {255, 0, 0}, {255, 0, 0});
+      line(minb.x, maxb.y, maxb.x, maxb.y, {255, 0, 0}, {255, 0, 0});
+      line(maxb.x, minb.y, maxb.x, maxb.y, {255, 0, 0}, {255, 0, 0});
     }
     for (size_t y = minb.y; y <= maxb.y; y++) {
       for (size_t x = minb.x; x <= maxb.x; x++) {
@@ -173,64 +142,26 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
 }
 
 void Canvas::triangle(int x0, int y0, int x1, int y1, int x2, int y2,
-                      const Color &fill, const Color &stroke) {
-  switch (renderMode) {
-  case RenderMode::WireFrame: {
-    line(x0, y0, x1, y1, stroke);
-    line(x1, y1, x2, y2, stroke);
-    line(x2, y2, x0, y0, stroke);
-    break;
-  }
-  case RenderMode::SolidColorRaster: {
-    vec2i v0{x0, y0};
-    vec2i v1{x1, y1};
-    vec2i v2{x2, y2};
-    std::array<vec2i, 3> va{v0, v1, v2};
-    std::sort(
-        va.begin(), va.end(),
-        [](const vec2i &vl, const vec2i &vr) -> bool { return vl.y > vr.y; });
-    float x0 = static_cast<float>(va[0].x);
-    float x1 = static_cast<float>(va[1].x);
-    float x2 = static_cast<float>(va[2].x);
-    float y0 = static_cast<float>(va[0].y);
-    float y1 = static_cast<float>(va[1].y);
-    float y2 = static_cast<float>(va[2].y);
-    float t0 = (y1 - y2) / (y0 - y2);
-    float x_ = x2 + t0 * (x0 - x2);
-    for (int y = y1; y >= y2; y--) {
-      float t1 = (y - y1) / (y2 - y1);
-      float x1_ = x1 + t1 * (x2 - x1);
-      float x2_ = x_ + t1 * (x2 - x_);
-      line(x1_, y, x2_, y, fill);
-    }
-    for (int y = y1; y <= y0; y++) {
-      float t1 = (y - y1) / (y0 - y1);
-      float x1_ = x1 + t1 * (x0 - x1);
-      float x2_ = x_ + t1 * (x0 - x_);
-      line(x1_, y, x2_, y, fill);
-    }
-    break;
-  }
-  }
-}
-
-void Canvas::triangle(const vec2i &v0, const vec2i &v1, const vec2i &v2,
-                      const Color &fill, const Color &stroke) {
-  triangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, fill, defaultStroke);
+                      const Color &fill) {
+  triangle({{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill},
+           {{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill},
+           {{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill},
+           Image::solidColor(1, 1, fill));
 }
 
 void Canvas::model(const std::wstring &name) {
-  Model* model = Model::loadModel(name);
+  Model *model = Model::loadModel(name);
   float size = static_cast<float>(std::min(width, height)) / 2.f;
   for (auto &tr : model->trs) {
     std::array<Vertex, 3> trcpys(tr);
     for (size_t i = 0; i < 3; i++) {
       trcpys[i].pos = tr[i]
-                      .pos.scale({size, size, size})
-                      .translate({width / 2.f, height / 2.f, 0.f});
+                          .pos.scale({size, size, size})
+                          .translate({width / 2.f, height / 2.f, 0.f});
       if (renderMode == RenderMode::SolidColorRaster) {
         float value = tr[i].nrm.normal().dot(light);
-        value = map(value, 0.f, 1.f, 0.f, 256.f);
+        value = map(value, 0.f, 1.f, 0.f, 255.f);
+        value = clamp<float>(value, 0, 255);
         byte intensity = static_cast<byte>(value);
         trcpys[i].col = {intensity, intensity, intensity, 255};
       }

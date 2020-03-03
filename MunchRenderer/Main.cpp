@@ -6,20 +6,21 @@
 struct BoxCanvas : Canvas {
   size_t fcount;
   float angle;
-  BoxCanvas(size_t width, size_t height) : Canvas(width, height), fcount(), angle() {
+  BoxCanvas(size_t width, size_t height)
+      : Canvas(width, height), fcount(), angle() {
     renderMode = RenderMode::TextureRaster;
   }
   ~BoxCanvas() {}
 
   void update() {
-    //setFlipVertical(false);
+    // setFlipVertical(false);
     clear();
     // Vertex vx0{{200, 150, 0}, {255, 0, 0}};
     // Vertex vx1{{600, 150, 0}, {0, 255, 0}};
     // Vertex vx2{{400, 450, 0}, {0, 0, 255}};
-    // renderMode = RenderMode::WireFrame;
+    renderMode = RenderMode::TextureRaster;
     // triangle(vx0, vx1, vx2);
-    static const float speed = .1f;
+    static const float speed = .3f;
     angle += deltaTime * speed;
     angle = fmod(angle, M_PI);
     light = {cos(angle), 0.f, sin(angle)};
@@ -33,7 +34,7 @@ struct BoxCanvas : Canvas {
     //  }
     //}
 
-    //image(img, {}, {width, height});
+    // image(img, {}, {width, height});
     std::stringstream ss;
     ss << fcount << ' ' << (1.f / deltaTime) << '\n';
     fcount++;

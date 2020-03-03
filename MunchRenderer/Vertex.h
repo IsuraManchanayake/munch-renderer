@@ -14,4 +14,6 @@ struct Vertex {
       : pos(pos), col(col), tex(), nrm() {}
   Vertex(const vec3f &pos, const vec2f &tex, const vec3f &nrm)
       : pos(pos), tex(tex), nrm(nrm), col() {}
+  Vertex(const vec3f &pos, const vec2f &tex, const vec3f &nrm, const Color &col)
+      : pos(pos), tex(tex), nrm(nrm), col(col) {}
 };

@@ -37,12 +37,7 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
   typedef typename T type;
   static Vector<DIM, T> zero;
 
-  // Vector() = default;
-  // Vector(const Vector<DIM, T> &) = default;
-  // Vector(Vector<DIM, T> &&) = default;
-  // Vector<DIM, T> &operator=(const Vector<DIM, T> &) = default;
-  template <typename... U>
-  Vector(U &&... args) : VecBase<DIM, T>(std::forward<U>(args)...) {}
+  template <typename... U> Vector(U &&... args);
 
   T &operator[](size_t idx);
   const T &operator[](size_t idx) const;
@@ -73,7 +68,12 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
 #define TEMPLATE_HEADER template <size_t DIM, typename T>
 
 TEMPLATE_HEADER
-Vector<DIM, T> Vector<DIM, T>::zero;
+Vector<DIM, T> Vector<DIM, T>::zero{0, 0, 0};
+
+TEMPLATE_HEADER
+template <typename... U>
+Vector<DIM, T>::Vector(U &&... args)
+    : VecBase<DIM, T>(std::forward<U>(args)...) {}
 
 TEMPLATE_HEADER
 T &Vector<DIM, T>::operator[](size_t idx) { return this->data[idx]; }
