@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "Vector.h"
 #include "Vertex.h"
+#include "IShader.h"
 
 #include <cinttypes>
 #include <string>
@@ -31,10 +32,10 @@ protected:
   void line(int x0, int y0, int x1, int y1, const Color &col0,
             const Color &col1);
   void triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
-                const Image &texture);
+                IShader* shader);
   void triangle(int x0, int y0, int x1, int y1, int x2, int y2,
                 const Color &fill);
-  void model(const std::wstring &name);
+  void model(const std::wstring &name, IShader* shader);
   void image(const Image &image, const vec2i &pos, const vec2i &size);
 
   virtual void update() = 0;

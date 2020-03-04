@@ -27,6 +27,7 @@ void Model::loadobj() {
     return;
   }
   std::string s;
+  std::vector<vec3f> vs;
   std::vector<vec2f> vts;
   std::vector<vec3f> vns;
   while (ifs >> s) {
@@ -65,21 +66,6 @@ void Model::loadobj() {
         std::array<Vertex, 3> tr{poly[0], poly[i + 1], poly[i + 2]};
         trs.emplace_back(tr);
       }
-      // std::array<Vertex, 3> tr;
-      // for (size_t i = 0; i < 3; i++) {
-      //  std::string ptn;
-      //  ifs >> ptn;
-      //  std::vector<std::string> splitted;
-      //  StringUtils::split(splitted, ptn, '/');
-      //  size_t pidx = StringUtils::lexical_cast<size_t>(splitted[0]);
-      //  size_t tidx = StringUtils::lexical_cast<size_t>(splitted[1]);
-      //  size_t nidx = StringUtils::lexical_cast<size_t>(splitted[2]);
-      //  tr[i].pos = vs[pidx - 1];
-      //  tr[i].tex = tidx > 0 ? vts[tidx - 1] : vec2f{};
-      //  tr[i].nrm = nidx > 0 ? vns[nidx - 1] : vec3f{};
-      //  tr[i].col = {255, 255, 255, 255};
-      //}
-      // trs.push_back(tr);
     } else {
       continue;
     }
@@ -94,42 +80,3 @@ void Model::loadtex() {
   }
 }
 
-void Model::translate(const vec3f &v) {
-  for (auto &tr : trs) {
-    for (auto &vx : tr) {
-      vx.pos = vx.pos.translate(v);
-    }
-  }
-}
-
-void Model::scale(const vec3f &v) {
-  for (auto &tr : trs) {
-    for (auto &vx : tr) {
-      vx.pos = vx.pos.scale(v);
-    }
-  }
-}
-
-void Model::rotx(float a) {
-  for (auto &tr : trs) {
-    for (auto &vx : tr) {
-      vx.pos = vx.pos.rotx(a);
-    }
-  }
-}
-
-void Model::roty(float a) {
-  for (auto &tr : trs) {
-    for (auto &vx : tr) {
-      vx.pos = vx.pos.roty(a);
-    }
-  }
-}
-
-void Model::rotz(float a) {
-  for (auto &tr : trs) {
-    for (auto &vx : tr) {
-      vx.pos = vx.pos.rotz(a);
-    }
-  }
-}

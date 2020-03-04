@@ -3,6 +3,24 @@
 #include "Renderer.h"
 #include "TGAImage.h"
 
+struct MyShader : IShader {
+  vec3f light;
+
+  template <typename... T>
+  MyShader(T &&... args) : IShader(std::forward<T>(args)...) {}
+
+  VertShaderOutput vert(const Vertex &v) {
+    size_t size = std::min(width, height) / 2;
+    return {v.pos.scale({size, size, size})
+                .translate({width / 2.f, height / 2.f, 0.f})};
+  }
+
+  FragShaderOutput frag(const Vertex &v) {
+    float intensity = v.nrm.normal().dot(light);
+    return intensity * texture->uv(v.tex);
+  }
+};
+
 struct BoxCanvas : Canvas {
   size_t fcount;
   float angle;
@@ -13,30 +31,16 @@ struct BoxCanvas : Canvas {
   ~BoxCanvas() {}
 
   void update() {
-    // setFlipVertical(false);
     clear();
-    // Vertex vx0{{200, 150, 0}, {255, 0, 0}};
-    // Vertex vx1{{600, 150, 0}, {0, 255, 0}};
-    // Vertex vx2{{400, 450, 0}, {0, 0, 255}};
-    renderMode = RenderMode::TextureRaster;
-    //drawBoundBox = true;
-    // triangle(vx0, vx1, vx2);
+
     static const float speed = .3f;
     angle += deltaTime * speed;
     angle = fmod(angle, M_PI);
-    light = {cos(angle), 0.f, sin(angle)};
-    //model(L"monkey/monkey");
-    model(L"african_head/african_head");
-    // static Image img =
-    // TGAImage::load(L"african_head/african_head_diffuse.tga"); Image img =
-    // TGAImage::load(L"leehee.tga"); if (!img.good) return;
-    // for (size_t y = 0; y < height; y++) {
-    //  for (size_t x = 0; x < width; x++) {
-    //    data[x + y * width] = img.data[x + y * width];
-    //  }
-    //}
 
-    // image(img, {}, {width, height});
+    MyShader shader(width, height);
+    shader.light = {cos(angle), 0.f, sin(angle)};
+    model(L"african_head/african_head", &shader);
+
     std::stringstream ss;
     ss << fcount << ' ' << (1.f / deltaTime) << '\n';
     fcount++;

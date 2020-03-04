@@ -38,6 +38,8 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
   static Vector<DIM, T> zero;
 
   template <typename... U> Vector(U &&... args);
+  template <size_t DIM1, typename T1, size_t MIND = (DIM > DIM1) ? DIM1 : DIM>
+  Vector(const Vector<DIM1, T1> &v);
 
   T &operator[](size_t idx);
   const T &operator[](size_t idx) const;
@@ -58,8 +60,9 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
   T dist(const Vector<DIM, T> &rhs) const;
   T norm() const;
   Vector<DIM, T> normal() const;
-  Vector<DIM, T> bary(const Vector<DIM, T> &v0, const Vector<DIM, T> &v1,
-                      const Vector<DIM, T> &v2) const;
+  template <typename T1>
+  Vector<DIM, T> bary(const Vector<DIM, T1> &v0, const Vector<DIM, T1> &v1,
+                      const Vector<DIM, T1> &v2) const;
 
   Vector<DIM, T> translate(const Vector<DIM, T> &v) const;
   Vector<DIM, T> scale(const Vector<DIM, T> &v) const;
@@ -77,6 +80,14 @@ TEMPLATE_HEADER
 template <typename... U>
 Vector<DIM, T>::Vector(U &&... args)
     : VecBase<DIM, T>(std::forward<U>(args)...) {}
+
+TEMPLATE_HEADER
+template <size_t DIM1, typename T1, size_t MIND>
+Vector<DIM, T>::Vector(const Vector<DIM1, T1> &v) : VecBase<DIM, T>() {
+  for (size_t i = 0, s = MIND; i < s; i++) {
+    this->data[i] = v[i];
+  }
+}
 
 TEMPLATE_HEADER
 T &Vector<DIM, T>::operator[](size_t idx) { return this->data[idx]; }
@@ -179,15 +190,17 @@ TEMPLATE_HEADER
 Vector<DIM, T> Vector<DIM, T>::normal() const { return (*this) / norm(); }
 
 TEMPLATE_HEADER
-Vector<DIM, T> Vector<DIM, T>::bary(const Vector<DIM, T> &v0,
-                                    const Vector<DIM, T> &v1,
-                                    const Vector<DIM, T> &v2) const {
+template <typename T1>
+Vector<DIM, T> Vector<DIM, T>::bary(const Vector<DIM, T1> &v0,
+                                    const Vector<DIM, T1> &v1,
+                                    const Vector<DIM, T1> &v2) const {
   Vector<DIM, T> xx{v0.x - v2.x, v1.x - v2.x, v2.x - this->x};
   Vector<DIM, T> yy{v0.y - v2.y, v1.y - v2.y, v2.y - this->y};
   Vector<DIM, T> ortho(xx.cross(yy));
   ortho = ortho / ortho.z;
   return {ortho.x, ortho.y, 1 - ortho.x - ortho.y};
 }
+
 TEMPLATE_HEADER
 Vector<DIM, T> Vector<DIM, T>::translate(const Vector<DIM, T> &v) const {
   return *this + v;

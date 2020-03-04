@@ -93,19 +93,22 @@ void Canvas::line(int x0, int y0, int x1, int y1, const Color &col0,
 }
 
 void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
-                      const Image &texture) {
+                      IShader *shader) {
   if (renderMode == RenderMode::WireFrame) {
     line(vx0, vx1);
     line(vx1, vx2);
     line(vx2, vx0);
   } else if (renderMode == RenderMode::SolidColorRaster ||
              renderMode == RenderMode::TextureRaster) {
-    std::array<Vertex, 3> vxa{vx0, vx1, vx2};
+    std::array<Vertex, 3> vxa = {vx0, vx1, vx2};
+    std::array<VertShaderOutput, 3> sva; // Screen vertex array
+    std::transform(vxa.begin(), vxa.end(), sva.begin(),
+                   [&shader](const Vertex &vx) { return shader->vert(vx); });
     vec2i minb{width - 1, height - 1};
     vec2i maxb{0, 0};
-    for (const auto &v : vxa) {
-      int x = v.pos.x;
-      int y = v.pos.y;
+    for (const auto &v : sva) {
+      int x = v.screenPos.x;
+      int y = v.screenPos.y;
       if (x < minb.x) {
         minb.x = std::max(x, 0);
       }
@@ -128,22 +131,22 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
     for (size_t y = minb.y; y <= maxb.y; y++) {
       for (size_t x = minb.x; x <= maxb.x; x++) {
         vec3f p{x, y, 0.0};
-        vec3f bcenter = p.bary(vx0.pos, vx1.pos, vx2.pos);
+        vec3f bcenter =
+            p.bary(sva[0].screenPos, sva[1].screenPos, sva[2].screenPos);
         float r0 = bcenter.x;
         float r1 = bcenter.y;
         float r2 = bcenter.z;
         if (r0 >= 0 && r1 >= 0 && r2 >= 0) {
-          float z = r0 * vx0.pos.z + r1 * vx1.pos.z + r2 * vx2.pos.z;
+          float z = r0 * sva[0].screenPos.z + r1 * sva[1].screenPos.z +
+                    r2 * sva[2].screenPos.z;
           if (zbuf[x + y * width] < z) {
             zbuf[x + y * width] = z;
-            if (renderMode == RenderMode::TextureRaster) {
-              vec2f uv = r0 * vx0.tex + r1 * vx1.tex + r2 * vx2.tex;
-              vec3f normal = r0 * vx0.nrm + r1 * vx1.nrm + r2 * vx2.nrm;
-              float intensity = normal.normal().dot(light);
-              data[x + y * width] = intensity * texture.uv(uv);
-            } else {
-              data[x + y * width] =
-                  Color::bary(vx0.col, vx1.col, vx2.col, r0, r1, r2);
+            vec3f pos = r0 * vx0.pos + r1 * vx1.pos + r2 * vx2.pos;
+            vec2f tex = r0 * vx0.tex + r1 * vx1.tex + r2 * vx2.tex;
+            vec3f nrm = r0 * vx0.nrm + r1 * vx1.nrm + r2 * vx2.nrm;
+            auto fragout = shader->frag({pos, tex, nrm});
+            if (!fragout.discard) {
+              data[x + y * width] = fragout.color;
             }
           }
         }
@@ -154,31 +157,19 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
 
 void Canvas::triangle(int x0, int y0, int x1, int y1, int x2, int y2,
                       const Color &fill) {
+  DullShader dullShader(width, height);
+  Image image = Image::solidColor(1, 1, fill);
+  dullShader.attachTexture(&image);
   triangle({{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill},
            {{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill},
-           {{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill},
-           Image::solidColor(1, 1, fill));
+           {{x0, y0, 0.f}, {}, {0.f, 0.f, 1.f}, fill}, &dullShader);
 }
 
-void Canvas::model(const std::wstring &name) {
+void Canvas::model(const std::wstring &name, IShader *shader) {
   Model *model = Model::loadModel(name);
-  float size = static_cast<float>(std::min(width, height)) / 2.f;
+  shader->attachTexture(&model->texture);
   for (auto &tr : model->trs) {
-    std::array<Vertex, 3> trcpys(tr);
-    for (size_t i = 0; i < 3; i++) {
-      trcpys[i].pos = tr[i]
-                          .pos.scale({size, size, size})
-                          //.rotx(M_PI_2)
-                          .translate({width / 2.f, height / 2.f, 0.f});
-      if (renderMode == RenderMode::SolidColorRaster) {
-        float value = tr[i].nrm.normal().dot(light);
-        value = map(value, 0.f, 1.f, 0.f, 255.f);
-        value = clamp<float>(value, 0, 255);
-        byte intensity = static_cast<byte>(value);
-        trcpys[i].col = {intensity, intensity, intensity, 255};
-      }
-    }
-    triangle(trcpys[0], trcpys[1], trcpys[2], model->texture);
+    triangle(tr[0], tr[1], tr[2], shader);
   }
 }
 
