@@ -4,26 +4,36 @@
 #include "TGAImage.h"
 
 struct MyShader : IShader {
-  vec3f light;
-  vec3f rotAngle;
+  static vec3f light;
+  static vec3f rotAngle;
 
   template <typename... T>
-  MyShader(T &&... args) : IShader(std::forward<T>(args)...) {
-    rotAngle = {};
+  MyShader(T &&... args) : IShader(std::forward<T>(args)...) {}
+
+  VertShaderOutput vert(const Vertex &v, size_t idx) {
+    //tri[idx] = v;
+    static const size_t size = std::min(width, height) / 2;
+    static const Matrix projection = Matrix::scale({size, size, size}) *
+                               Matrix::translate({width / 2, height / 2, 0.f});
+    const Matrix transform = Matrix::rotate(rotAngle) * projection;
+    vec4f out = v.pos * transform;
+    vec4f nrm = v.nrm * transform.invtrans();
+    tri[idx].pos = out.as<3>();
+    tri[idx].tex = v.tex;
+    tri[idx].nrm = nrm.as<3>();
+    //tri[idx].nrm = v.nrm;
+    return {tri[idx].pos};
   }
 
-  VertShaderOutput vert(const Vertex &v) {
-    static size_t size = std::min(width, height) / 2;
-    static Matrix transform = Matrix::scale({size, size, size}) *
-                              Matrix::translate({width / 2, height / 2, 0.f});
-    return {v.pos * Matrix::rotate(rotAngle) * transform};
-  }
-
-  FragShaderOutput frag(const Vertex &v) {
-    float intensity = v.nrm.normal().dot(light.normal());
-    return intensity * texture->uv(v.tex);
+  FragShaderOutput frag(float r0, float r1, float r2) {
+    Vertex fragVert = computeFragVert(r0, r1, r2);
+    float intensity = fragVert.nrm.normal().dot(light.normal());
+    return {intensity * texture->uv(fragVert.tex)};
   }
 };
+
+vec3f MyShader::light;
+vec3f MyShader::rotAngle;
 
 struct BoxCanvas : Canvas {
   size_t fcount;
@@ -43,10 +53,10 @@ struct BoxCanvas : Canvas {
     static const float speed = .3f;
     // angle += deltaTime * speed;
     angle = fmod(angle, M_PI);
-    //shader.light = {cos(angle), 0.f, sin(angle)};
-    shader.rotAngle.y += deltaTime * speed ;
-    shader.light =
-        (shader.light * Matrix::rotate({0.f, -deltaTime * speed, 0.f})).as<3>();
+     //shader.light = {cos(angle), 0.f, sin(angle)};
+    shader.rotAngle.y += deltaTime * speed;
+    //shader.light =
+    //    (shader.light * Matrix::rotate({0.f, -deltaTime * speed, 0.f})).as<3>();
     model(L"african_head/african_head", &shader);
     // model(L"corona/corona-lowpoly", &shader);
 

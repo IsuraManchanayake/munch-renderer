@@ -106,6 +106,8 @@ struct Matrix {
   template <typename... T> Matrix(T &&... init);
 
   Matrix transpose() const;
+  bool inv(Matrix &invmat) const;
+  Matrix invtrans() const;
 
   float &operator[](const size_t idx);
   const float &operator[](const size_t idx) const;

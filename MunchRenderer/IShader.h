@@ -23,20 +23,22 @@ struct IShader {
   const Image *texture;
   size_t width;
   size_t height;
+  std::array<Vertex, 3> tri;
 
   IShader();
   IShader(size_t width, size_t height);
   virtual ~IShader();
 
-  virtual VertShaderOutput vert(const Vertex &v) = 0;
-  virtual FragShaderOutput frag(const Vertex &v) = 0;
+  virtual VertShaderOutput vert(const Vertex &v, size_t idx) = 0;
+  virtual FragShaderOutput frag(float r0, float r1, float r2) = 0;
 
   void attachTexture(Image *texture);
+  Vertex computeFragVert(float r0, float r1, float r2) const;
 };
 
 struct DullShader : IShader {
   DullShader();
   DullShader(size_t width, size_t height);
-  virtual VertShaderOutput vert(const Vertex &v);
-  virtual FragShaderOutput frag(const Vertex &v);
+  virtual VertShaderOutput vert(const Vertex &v, size_t idx);
+  virtual FragShaderOutput frag(float r0, float r1, float r2);
 };

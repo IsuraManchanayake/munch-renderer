@@ -1,5 +1,7 @@
 #include "Vector.h"
 
+#include <algorithm>
+
 Matrix::Matrix() : data() {}
 
 template <typename... T>
@@ -13,6 +15,60 @@ Matrix Matrix::transpose() const {
     }
   }
   return res;
+}
+
+bool Matrix::inv(Matrix &invmat) const {
+  std::array<float, 16> mat = data;
+  std::array<float, 16> &inv = invmat.data;
+  for (size_t i = 0; i < 4; i++) {
+    // inv[i + i * 4] = 1.f;
+    inv[i * 5] = 1.f;
+  }
+  for (size_t iter = 0; iter < 4; iter++) {
+    bool found = false;
+    for (size_t i = iter; i < 4; i++) {
+      // if (mat[i + i * 4] != 0) {
+      if (mat[i * 5] != 0) {
+        if (iter != i) {
+          std::swap_ranges(std::begin(mat) + 4 * i, std::begin(mat) + 4 * i + 4,
+                           std::begin(mat) + 4 * iter);
+          std::swap_ranges(std::begin(inv) + 4 * i, std::begin(inv) + 4 * i + 4,
+                           std::begin(inv) + 4 * iter);
+        }
+        found = true;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+    // float coef = mat[iter + iter * 4];
+    float coef = mat[iter * 5];
+    for (size_t i = 0; i < 4; i++) {
+      mat[i + iter * 4] /= coef;
+      inv[i + iter * 4] /= coef;
+    }
+    for (size_t i = 0; i < 4; i++) {
+      if (i == iter)
+        continue;
+      float coef = mat[iter + i * 4];
+      if (coef != 0.f) {
+        for (size_t j = 0; j < 4; j++) {
+          mat[j + i * 4] -= mat[j + iter * 4] * coef;
+          inv[j + i * 4] -= inv[j + iter * 4] * coef;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+Matrix Matrix::invtrans() const { Matrix invtr{};
+  bool out = this->inv(invtr);
+  if (out) {
+    return invtr.transpose();
+  } else {
+    return {};
+  }
 }
 
 float &Matrix::operator[](const size_t idx) { return data[idx]; }

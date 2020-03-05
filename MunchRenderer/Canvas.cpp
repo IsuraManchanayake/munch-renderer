@@ -102,8 +102,9 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
              renderMode == RenderMode::TextureRaster) {
     std::array<Vertex, 3> vxa = {vx0, vx1, vx2};
     std::array<VertShaderOutput, 3> sva; // Screen vertex array
-    std::transform(vxa.begin(), vxa.end(), sva.begin(),
-                   [&shader](const Vertex &vx) { return shader->vert(vx); });
+    for (size_t idx = 0; idx < 3; idx++) {
+      sva[idx] = shader->vert(vxa[idx], idx);
+    }
     vec2i minb{width - 1, height - 1};
     vec2i maxb{0, 0};
     for (const auto &v : sva) {
@@ -141,10 +142,7 @@ void Canvas::triangle(const Vertex &vx0, const Vertex &vx1, const Vertex &vx2,
                     r2 * sva[2].screenPos.z;
           if (zbuf[x + y * width] < z) {
             zbuf[x + y * width] = z;
-            vec3f pos = r0 * vx0.pos + r1 * vx1.pos + r2 * vx2.pos;
-            vec2f tex = r0 * vx0.tex + r1 * vx1.tex + r2 * vx2.tex;
-            vec3f nrm = r0 * vx0.nrm + r1 * vx1.nrm + r2 * vx2.nrm;
-            auto fragout = shader->frag({pos, tex, nrm});
+            auto fragout = shader->frag(r0, r1, r2);
             if (!fragout.discard) {
               data[x + y * width] = fragout.color;
             }
@@ -174,36 +172,19 @@ void Canvas::model(const std::wstring &name, IShader *shader) {
 }
 
 void Canvas::image(const Image &image, const vec2i &pos, const vec2i &size) {
-  size_t bminx = clamp<size_t>(pos.x, 0, width - 1);
-  size_t bminy = clamp<size_t>(pos.y, 0, height - 1);
-  size_t bmaxx =
+  const size_t bminx = clamp<size_t>(pos.x, 0, width - 1);
+  const size_t bminy = clamp<size_t>(pos.y, 0, height - 1);
+  const size_t bmaxx =
       clamp<size_t>(static_cast<size_t>(pos.x) + size.x - 1, 0, width - 1);
-  size_t bmaxy =
+  const size_t bmaxy =
       clamp<size_t>(static_cast<size_t>(pos.y) + size.y - 1, 0, height - 1);
+  const size_t &imw = image.width;
+  const size_t &imh = image.height;
   for (size_t y = bminy; y <= bmaxy; y++) {
     for (size_t x = bminx; x <= bmaxx; x++) {
-      size_t x_ = x - pos.x;
-      size_t y_ = y - pos.y;
-      size_t imw = image.width;
-      size_t imh = image.height;
-      float imx = (static_cast<float>(x_) * imw) / size.x;
-      float imy = (static_cast<float>(y_) * imh) / size.y;
-      float imxfrac = fraction(imx);
-      float imyfrac = fraction(imy);
-      size_t imx0 = floor(imx);
-      size_t imy0 = floor(imy);
-      size_t imx1 = (imx0 == imw - 1) ? imx0 : imx0 + 1;
-      size_t imy1 = (imy0 == imh - 1) ? imy0 : imy0 + 1;
-      Color c00 = image.data[imx0 + imy0 * imw];
-      Color c10 = image.data[imx1 + imy0 * imw];
-      Color c01 = image.data[imx0 + imy1 * imw];
-      Color c11 = image.data[imx1 + imy1 * imw];
-      Color cxy{};
-      for (size_t i = 0; i < 4; i++) {
-        cxy.bgra[i] = lerp(lerp(c00.bgra[i], c10.bgra[i], imxfrac),
-                           lerp(c01.bgra[i], c11.bgra[i], imxfrac), imyfrac);
-      }
-      data[x + y * width] = cxy;
+      const float imx = (static_cast<float>(x - pos.x) * imw) / size.x;
+      const float imy = (static_cast<float>(y - pos.y) * imh) / size.y;
+      data[x + y * width] = image.uv({imx, imy});
     }
   }
 }
