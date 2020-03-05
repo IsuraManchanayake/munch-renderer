@@ -54,6 +54,9 @@
     <ClInclude Include="IShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Vector.cpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas.cpp">

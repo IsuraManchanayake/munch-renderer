@@ -8,6 +8,7 @@ struct VertShaderOutput {
   vec3f screenPos;
   VertShaderOutput();
   VertShaderOutput(const vec3f screenPos);
+  VertShaderOutput(const vec4f screenPos);
 };
 
 struct FragShaderOutput {

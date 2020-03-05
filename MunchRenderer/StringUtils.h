@@ -26,8 +26,21 @@ public:
       n = n * 10 + c;
     }
 #pragma warning(push)
-#pragma warning(disable:4146)
+#pragma warning(disable : 4146)
     return neg ? -static_cast<T>(n) : static_cast<T>(n);
 #pragma warning(pop)
+  }
+
+  static void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                                    [](int ch) { return !std::isspace(ch); }));
+  }
+
+  // trim from end (in place)
+  static void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         [](int ch) { return !std::isspace(ch); })
+                .base(),
+            s.end());
   }
 };

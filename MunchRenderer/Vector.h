@@ -7,6 +7,18 @@
 
 template <size_t DIM, typename T> struct VecBase;
 
+template <typename T> struct VecBase<2, T> {
+  union {
+    struct {
+      T x;
+      T y;
+    };
+    std::array<T, 2> data;
+  };
+  VecBase() : x(), y() {}
+  VecBase(T x, T y) : x(x), y(y) {}
+};
+
 template <typename T> struct VecBase<3, T> {
   union {
     struct {
@@ -20,39 +32,49 @@ template <typename T> struct VecBase<3, T> {
   VecBase(T x, T y, T z) : x(x), y(y), z(z) {}
 };
 
-template <typename T> struct VecBase<2, T> {
+template <typename T> struct VecBase<4, T> {
   union {
     struct {
       T x;
       T y;
+      T z;
+      T w;
     };
-    std::array<T, 2> data;
+    std::array<T, 4> data;
   };
-  VecBase() : x(), y() {}
-  VecBase(T x, T y) : x(x), y(y) {}
+  VecBase() : x(), y(), z(), w() {}
+  VecBase(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
 };
 
 template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
-  static constexpr T dim = DIM;
-  typedef typename T type;
+  static constexpr size_t dim = DIM;
+  using type = T;
   static Vector<DIM, T> zero;
 
   template <typename... U> Vector(U &&... args);
-  template <size_t DIM1, typename T1, size_t MIND = (DIM > DIM1) ? DIM1 : DIM>
-  Vector(const Vector<DIM1, T1> &v);
+  template <size_t DIM1> Vector<DIM1, T> as() const;
 
   T &operator[](size_t idx);
   const T &operator[](size_t idx) const;
   Vector<DIM, T> operator+(const Vector<DIM, T> &rhs) const;
   Vector<DIM, T> operator-(const Vector<DIM, T> &rhs) const;
-  T operator*(const Vector<DIM, T> &rhs) const; // dot product
   Vector<DIM, T> operator-() const;
-  template <typename U> Vector<DIM, T> operator*(const U &rhs) const;
-  template <typename U> Vector<DIM, T> operator/(const U &rhs) const;
-  template <size_t DIM1, typename T1, typename U>
-  friend Vector<DIM1, T1> operator*(const U &lhs, const Vector<DIM1, T1> &rhs);
-  T dot(const Vector<DIM, T> &rhs)
-      const; // dot product, same as above Vector::operator*(Vector)
+  //template <
+  //    typename = typename std::enable_if<!std::is_same<float, T>::value>::type>
+  //Vector<DIM, float> operator*(const float &rhs) const;
+  //template <
+  //    typename = typename std::enable_if<!std::is_same<float, T>::value>::type>
+  //Vector<DIM, float> operator/(const float &rhs) const;
+  Vector<DIM, T> operator*(const T &rhs) const;
+  Vector<DIM, T> operator/(const T &rhs) const;
+  //template <
+  //    size_t DIM1, typename T1,
+  //    typename = typename std::enable_if<!std::is_same<float, T1>::value>::type>
+  //friend Vector<DIM1, T1> operator*(const float &lhs,
+  //                                  const Vector<DIM1, T1> &rhs);
+  template <size_t DIM1, typename T1>
+  friend Vector<DIM1, T1> operator*(const T1 &lhs, const Vector<DIM1, T1> &rhs);
+  T dot(const Vector<DIM, T> &rhs) const;
   Vector<DIM, T>
   mul(const Vector<DIM, T> &rhs) const; // element-wise multiplication
   Vector<DIM, T> cross(const Vector<DIM, T> &rhs) const;
@@ -71,6 +93,34 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
   Vector<DIM, T> rotz(float a) const;
 };
 
+using vec2i = Vector<2, int>;
+using vec3i = Vector<3, int>;
+using vec2f = Vector<2, float>;
+using vec3f = Vector<3, float>;
+using vec4f = Vector<4, float>;
+
+struct Matrix {
+  std::array<float, 16> data;
+
+  Matrix();
+  template <typename... T> Matrix(T &&... init);
+
+  Matrix transpose() const;
+
+  float &operator[](const size_t idx);
+  const float &operator[](const size_t idx) const;
+
+  Matrix operator*(const Matrix &mat) const;
+  friend vec4f operator*(const vec4f &v, const Matrix &mat);
+  friend vec4f operator*(const vec3f &v, const Matrix &mat);
+
+  static Matrix translate(const vec3f &v);
+  static Matrix scale(const vec3f &v);
+  static Matrix rotate(const vec3f &v);
+};
+
+//using mat4f = Matrix;
+
 #define TEMPLATE_HEADER template <size_t DIM, typename T>
 
 TEMPLATE_HEADER
@@ -82,11 +132,12 @@ Vector<DIM, T>::Vector(U &&... args)
     : VecBase<DIM, T>(std::forward<U>(args)...) {}
 
 TEMPLATE_HEADER
-template <size_t DIM1, typename T1, size_t MIND>
-Vector<DIM, T>::Vector(const Vector<DIM1, T1> &v) : VecBase<DIM, T>() {
-  for (size_t i = 0, s = MIND; i < s; i++) {
-    this->data[i] = v[i];
+template <size_t DIM1> Vector<DIM1, T> Vector<DIM, T>::as() const {
+  Vector<DIM1, T> v{};
+  for (size_t i = 0, s = DIM > DIM1 ? DIM1 : DIM; i < s; i++) {
+    v.data[i] = this->data[i];
   }
+  return v;
 }
 
 TEMPLATE_HEADER
@@ -116,26 +167,16 @@ Vector<DIM, T> Vector<DIM, T>::operator-(const Vector<DIM, T> &rhs) const {
 }
 
 TEMPLATE_HEADER
-T Vector<DIM, T>::operator*(const Vector<DIM, T> &rhs) const {
-  T result{};
-  for (size_t i = 0; i < DIM; i++) {
-    result += this->data[i] * rhs[i];
-  }
-  return result;
-}
-
-TEMPLATE_HEADER
 Vector<DIM, T> Vector<DIM, T>::operator-() const {
   Vector<DIM, T> result;
   for (size_t i = 0; i < DIM; i++) {
     result[i] = -this->data[i];
   }
-  result;
+  return result;
 }
 
 TEMPLATE_HEADER
-template <typename U>
-Vector<DIM, T> Vector<DIM, T>::operator*(const U &rhs) const {
+Vector<DIM, T> Vector<DIM, T>::operator*(const T &rhs) const {
   Vector<DIM, T> result(*this);
   for (size_t i = 0; i < DIM; i++) {
     result[i] *= rhs;
@@ -144,8 +185,7 @@ Vector<DIM, T> Vector<DIM, T>::operator*(const U &rhs) const {
 }
 
 TEMPLATE_HEADER
-template <typename U>
-Vector<DIM, T> Vector<DIM, T>::operator/(const U &rhs) const {
+Vector<DIM, T> Vector<DIM, T>::operator/(const T &rhs) const {
   Vector<DIM, T> result(*this);
   for (size_t i = 0; i < DIM; i++) {
     result[i] /= rhs;
@@ -153,13 +193,19 @@ Vector<DIM, T> Vector<DIM, T>::operator/(const U &rhs) const {
   return result;
 }
 
-template <size_t DIM1, typename T1, typename U>
-Vector<DIM1, T1> operator*(const U &lhs, const Vector<DIM1, T1> &rhs) {
+template <size_t DIM1, typename T1>
+Vector<DIM1, T1> operator*(const T1 &lhs, const Vector<DIM1, T1> &rhs) {
   return rhs * lhs;
 }
 
 TEMPLATE_HEADER
-T Vector<DIM, T>::dot(const Vector<DIM, T> &rhs) const { return (*this) * rhs; }
+T Vector<DIM, T>::dot(const Vector<DIM, T> &rhs) const {
+  T res{};
+  for (size_t i = 0; i < DIM; i++) {
+    res += this->data[i] * rhs.data[i];
+  }
+  return res;
+}
 
 TEMPLATE_HEADER
 Vector<DIM, T> Vector<DIM, T>::mul(const Vector<DIM, T> &rhs) const {
@@ -178,13 +224,13 @@ Vector<DIM, T> Vector<DIM, T>::cross(const Vector<DIM, T> &rhs) const {
 }
 
 TEMPLATE_HEADER
-typename T Vector<DIM, T>::dist(const Vector<DIM, T> &rhs) const {
+T Vector<DIM, T>::dist(const Vector<DIM, T> &rhs) const {
   T result();
   return (*this - rhs).norm();
 }
 
 TEMPLATE_HEADER
-T Vector<DIM, T>::norm() const { return sqrt((*this) * (*this)); }
+T Vector<DIM, T>::norm() const { return sqrt(this->dot(*this)); }
 
 TEMPLATE_HEADER
 Vector<DIM, T> Vector<DIM, T>::normal() const { return (*this) / norm(); }
@@ -228,8 +274,3 @@ Vector<DIM, T> Vector<DIM, T>::rotz(float a) const {
   return {this->x * cos(a) + this->y * sin(a),
           -this->x * sin(a) + this->y * cos(a), this->z};
 }
-
-typedef typename Vector<2, int> vec2i;
-typedef typename Vector<3, int> vec3i;
-typedef typename Vector<2, float> vec2f;
-typedef typename Vector<3, float> vec3f;

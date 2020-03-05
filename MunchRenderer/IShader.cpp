@@ -4,6 +4,8 @@
 VertShaderOutput::VertShaderOutput() : screenPos() {}
 VertShaderOutput::VertShaderOutput(const vec3f screenPos)
     : screenPos(screenPos) {}
+VertShaderOutput::VertShaderOutput(const vec4f screenPos)
+    : screenPos(screenPos.x, screenPos.y, screenPos.z) {}
 
 FragShaderOutput::FragShaderOutput() : color(), discard(false) {}
 FragShaderOutput::FragShaderOutput(const Color &color)

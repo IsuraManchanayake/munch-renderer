@@ -5,18 +5,22 @@
 
 struct MyShader : IShader {
   vec3f light;
+  vec3f rotAngle;
 
   template <typename... T>
-  MyShader(T &&... args) : IShader(std::forward<T>(args)...) {}
+  MyShader(T &&... args) : IShader(std::forward<T>(args)...) {
+    rotAngle = {};
+  }
 
   VertShaderOutput vert(const Vertex &v) {
-    size_t size = std::min(width, height) / 2;
-    return {v.pos.scale({size, size, size})
-                .translate({width / 2.f, height / 2.f, 0.f})};
+    static size_t size = std::min(width, height) / 2;
+    static Matrix transform = Matrix::scale({size, size, size}) *
+                              Matrix::translate({width / 2, height / 2, 0.f});
+    return {v.pos * Matrix::rotate(rotAngle) * transform};
   }
 
   FragShaderOutput frag(const Vertex &v) {
-    float intensity = v.nrm.normal().dot(light);
+    float intensity = v.nrm.normal().dot(light.normal());
     return intensity * texture->uv(v.tex);
   }
 };
@@ -24,9 +28,12 @@ struct MyShader : IShader {
 struct BoxCanvas : Canvas {
   size_t fcount;
   float angle;
+  MyShader shader;
+
   BoxCanvas(size_t width, size_t height)
-      : Canvas(width, height), fcount(), angle() {
+      : Canvas(width, height), fcount(), angle(), shader(width, height) {
     renderMode = RenderMode::TextureRaster;
+    shader.light = {1.f, 0.f, 1.f};
   }
   ~BoxCanvas() {}
 
@@ -34,12 +41,14 @@ struct BoxCanvas : Canvas {
     clear();
 
     static const float speed = .3f;
-    angle += deltaTime * speed;
+    // angle += deltaTime * speed;
     angle = fmod(angle, M_PI);
-
-    MyShader shader(width, height);
-    shader.light = {cos(angle), 0.f, sin(angle)};
+    //shader.light = {cos(angle), 0.f, sin(angle)};
+    shader.rotAngle.y += deltaTime * speed ;
+    shader.light =
+        (shader.light * Matrix::rotate({0.f, -deltaTime * speed, 0.f})).as<3>();
     model(L"african_head/african_head", &shader);
+    // model(L"corona/corona-lowpoly", &shader);
 
     std::stringstream ss;
     ss << fcount << ' ' << (1.f / deltaTime) << '\n';

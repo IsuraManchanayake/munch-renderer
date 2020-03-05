@@ -48,6 +48,7 @@ void Model::loadobj() {
       std::string line;
       std::getline(ifs, line);
       std::vector<std::string> pts;
+      StringUtils::rtrim(line);
       StringUtils::split(pts, line, ' ');
       std::vector<Vertex> poly(pts.size() - 1);
       for (size_t i = 0; i < pts.size() - 1; i++) {
