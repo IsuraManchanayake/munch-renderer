@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <iostream>
+
 template <size_t DIM, typename T> struct VecBase;
 
 template <typename T> struct VecBase<2, T> {
@@ -59,18 +61,21 @@ template <size_t DIM, typename T> struct Vector : VecBase<DIM, T> {
   Vector<DIM, T> operator+(const Vector<DIM, T> &rhs) const;
   Vector<DIM, T> operator-(const Vector<DIM, T> &rhs) const;
   Vector<DIM, T> operator-() const;
-  //template <
-  //    typename = typename std::enable_if<!std::is_same<float, T>::value>::type>
-  //Vector<DIM, float> operator*(const float &rhs) const;
-  //template <
-  //    typename = typename std::enable_if<!std::is_same<float, T>::value>::type>
-  //Vector<DIM, float> operator/(const float &rhs) const;
+  // template <
+  //    typename = typename std::enable_if<!std::is_same<float,
+  //    T>::value>::type>
+  // Vector<DIM, float> operator*(const float &rhs) const;
+  // template <
+  //    typename = typename std::enable_if<!std::is_same<float,
+  //    T>::value>::type>
+  // Vector<DIM, float> operator/(const float &rhs) const;
   Vector<DIM, T> operator*(const T &rhs) const;
   Vector<DIM, T> operator/(const T &rhs) const;
-  //template <
+  // template <
   //    size_t DIM1, typename T1,
-  //    typename = typename std::enable_if<!std::is_same<float, T1>::value>::type>
-  //friend Vector<DIM1, T1> operator*(const float &lhs,
+  //    typename = typename std::enable_if<!std::is_same<float,
+  //    T1>::value>::type>
+  // friend Vector<DIM1, T1> operator*(const float &lhs,
   //                                  const Vector<DIM1, T1> &rhs);
   template <size_t DIM1, typename T1>
   friend Vector<DIM1, T1> operator*(const T1 &lhs, const Vector<DIM1, T1> &rhs);
@@ -113,15 +118,18 @@ struct Matrix {
   const float &operator[](const size_t idx) const;
 
   Matrix operator*(const Matrix &mat) const;
-  friend vec4f operator*(const vec4f &v, const Matrix &mat);
-  friend vec4f operator*(const vec3f &v, const Matrix &mat);
+  // friend vec4f operator*(const vec4f &v, const Matrix &mat);
+  // friend vec4f operator*(const vec3f &v, const Matrix &mat);
+  vec4f operator*(const vec4f &v) const;
+  vec4f operator*(const vec3f &v) const;
 
   static Matrix translate(const vec3f &v);
   static Matrix scale(const vec3f &v);
   static Matrix rotate(const vec3f &v);
+  static Matrix camera(float z);
+  static Matrix lookat(const vec3f &center, const vec3f &eye, const vec3f &up);
+  static Matrix view(const vec3f &center, const vec3f &eye, const vec3f &up);
 };
-
-//using mat4f = Matrix;
 
 #define TEMPLATE_HEADER template <size_t DIM, typename T>
 

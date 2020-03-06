@@ -62,7 +62,8 @@ bool Matrix::inv(Matrix &invmat) const {
   return true;
 }
 
-Matrix Matrix::invtrans() const { Matrix invtr{};
+Matrix Matrix::invtrans() const {
+  Matrix invtr{};
   bool out = this->inv(invtr);
   if (out) {
     return invtr.transpose();
@@ -87,23 +88,23 @@ Matrix Matrix::operator*(const Matrix &mat) const {
   return res;
 }
 
-vec4f operator*(const vec4f &v, const Matrix &mat) {
+vec4f Matrix::operator*(const vec4f &v) const {
   vec4f res{};
   for (size_t i = 0; i < 4; i++) {
     for (size_t j = 0; j < 4; j++) {
-      res.data[i] += v.data[j] * mat.data[i + j * 4];
+      res.data[i] += this->data[j + i * 4] * v[j];
     }
   }
   return res;
 }
 
-vec4f operator*(const vec3f &v, const Matrix &mat) {
-  return vec4f{v.x, v.y, v.z, 1.f} * mat;
+vec4f Matrix::operator*(const vec3f &v) const {
+  return this->operator*(vec4f{v.x, v.y, v.z, 1.f});
 }
 
 Matrix Matrix::translate(const vec3f &v) {
-  return {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f,
-          0.f, 0.f, 1.f, 0.f, v.x, v.y, v.z, 1.f};
+  return {1.f, 0.f, 0.f, v.x, 0.f, 1.f, 0.f, v.y,
+          0.f, 0.f, 1.f, v.z, 0.f, 0.f, 0.f, 1.f};
 }
 
 Matrix Matrix::scale(const vec3f &v) {
@@ -134,4 +135,23 @@ Matrix Matrix::rotate(const vec3f &v) {
           0.f,
           0.f,
           1.f};
+}
+
+Matrix Matrix::camera(float z) {
+  const float dist = 1.3;
+  return {1.f/dist, 0.f, 0.f, 0.f, 0.f, 1.f/dist, 0.f,      0.f,
+          0.f, 0.f, 1.f, 0.f, 0.f, 0.f, -1.f / z, 1.f};
+}
+
+Matrix Matrix::lookat(const vec3f &center, const vec3f &eye, const vec3f &up) {
+  const vec3f camera = eye - center;
+  const vec3f zz = camera.normal();
+  const vec3f xx = up.cross(zz).normal();
+  const vec3f yy = zz.cross(xx).normal();
+  return {xx.x, xx.y, xx.z, 0.f, yy.x, yy.y, yy.z, 0.f,
+          zz.x, zz.y, zz.z, 0.f, 0.f,  0.f,  0.f,  1.f};
+}
+
+Matrix Matrix::view(const vec3f& center, const vec3f& eye, const vec3f& up) {
+  return lookat(center, eye, up) * Matrix::translate(-center);
 }
