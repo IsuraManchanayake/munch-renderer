@@ -106,7 +106,6 @@ Image TGAImage::load(const std::wstring &fname) {
   if (FAILED(hr)) {
     return {};
   } else {
-    std::stringstream ss;
     const DirectX::Image *image = std::move(scratch.GetImage(0, 0, 0));
     return {image};
   }

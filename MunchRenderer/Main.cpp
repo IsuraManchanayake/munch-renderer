@@ -8,6 +8,8 @@ struct MyShader : IShader {
   static vec3f look; // look at position
   static vec3f up;   // camera up
   static vec3f cam;  // camera location
+  mat4f pvminvtrans;
+  mat4f pvm;
 
   static vec3f translate;
   static vec3f rotAngle;
@@ -16,38 +18,54 @@ struct MyShader : IShader {
   MyShader(T &&... args) : IShader(std::forward<T>(args)...) {}
 
   VertShaderOutput vert(const Vertex &v, size_t idx) {
-    // tri[idx] = v;
+    triorig[idx] = v;
     static const size_t size = std::min(width, height) / 2;
-    // static const Matrix projection =
-    //    Matrix::translate({width / 2, height / 2, 0.f}) *
-    //    Matrix::scale({size, size, size});
-    const Matrix model =
-        Matrix::translate(translate) * Matrix::rotate(rotAngle);
-    static const Matrix view = Matrix::view(look, cam, up);
-    static const Matrix projection = Matrix::camera(look.dist(cam));
+    const mat4f model = mat4f::translate(translate) * mat4f::rotate(rotAngle);
+    static const mat4f view = mat4f::view(look, cam, up);
+    static const mat4f projection = mat4f::camera(look.dist(cam));
     static const Matrix viewport =
-        Matrix::translate({width / 2, height / 2, 0.f}) *
-        Matrix::scale({size, size, size});
-    static const Matrix projectionview = projection * view;
-    static const Matrix viewportpv = viewport * projectionview;
-    const Matrix pvm = projectionview * model;
-    const Matrix pvminvtrans = pvm.invtrans();
+        mat4f::translate({width / 2, height / 2, 0.f}) *
+        mat4f::scale({size, size, size});
+    static const mat4f projectionview = projection * view;
+    static const mat4f viewportpv = viewport * projectionview;
+    pvm = projectionview * model;
+    pvminvtrans = pvm.invtrans();
 
-    const Matrix transform = viewportpv * model;
+    const mat4f transform = viewportpv * model;
     vec4f out = transform * v.pos;
-    // out = Matrix::scale({size, size, size}) * out;
     out = out / out.w;
-    vec4f nrm = pvminvtrans * v.nrm;
-    tri[idx].pos = out.as<3>();
-    tri[idx].tex = v.tex;
-    tri[idx].nrm = nrm.as<3>();
-    // tri[idx].nrm = v.nrm;
-    return {tri[idx].pos};
+    // vec4f nrm = pvminvtrans * v.nrm;
+    // vec4f tan = pvminvtrans * v.tan;
+    // float d1 = v.nrm.dot(v.tan);
+    // float d2 = nrm.dot(tan);
+
+    triview[idx].pos = out.as<3>();
+    triview[idx].tex = v.tex;
+    // triview[idx].nrm = nrm.as<3>().normal();
+    // triview[idx].tan = tan.as<3>().normal();
+    triview[idx].nrm = (pvminvtrans * v.nrm.as<4>()).as<3>().normal();
+    //triview[idx].tan = (pvminvtrans * v.tan.as<4>()).as<3>().normal();
+    return {triview[idx].pos};
   }
 
   FragShaderOutput frag(float r0, float r1, float r2) {
-    Vertex fragVert = computeFragVert(r0, r1, r2);
-    float intensity = fragVert.nrm.normal().dot(light.normal());
+    const Vertex fragVert = computeFragVert(r0, r1, r2);
+    /*
+    const vec3f &n = fragVert.nrm.normal();
+    const vec3f &t = fragVert.tan.normal();
+    const vec3f b = n.cross(t).normal();
+    const Color normaluv = normal->uv(fragVert.tex);
+    const vec3f normaldb{(2.f / 255.f) * normaluv.r - 1.f,
+                         (2.f / 255.f) * normaluv.g - 1.f,
+                         (2.f / 255.f) * normaluv.b - 1.f};
+    //const mat3f dbtoobj{t.x, t.y, t.z, b.x, b.y, b.z, n.x, n.y, n.z};
+    const mat3f dbtoobj{t.x, t.y, t.z, b.x, b.y, b.z, n.x, n.y, n.z};
+    //vec3f lighttbn = dbtoobj * light;
+    // const float intensity = normaldb.normal().dot(lighttbn.normal());
+    vec3f normalv = dbtoobj * normaldb;
+    // normalv = (pvm * normalv).as<3>();*/
+
+    const float intensity = fragVert.nrm.normal().dot(light.normal());
     return {intensity * texture->uv(fragVert.tex)};
   }
 };

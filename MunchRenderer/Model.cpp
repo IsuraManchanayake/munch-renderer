@@ -14,6 +14,7 @@ Model *Model::loadModel(const std::wstring &name) {
   Model *model = new Model(name);
   model->loadobj();
   model->loadtex();
+  model->loadnrm();
   modelCache[name] = model;
   return model;
 }
@@ -74,10 +75,44 @@ void Model::loadobj() {
 }
 
 void Model::loadtex() {
-  std::wstring texfname = name + L"_diffuse.tga";
+  const std::wstring texfname = name + L"_diffuse.tga";
   texture = TGAImage::load(texfname);
   if (!texture.good) {
     texture = Image::solidColor(1, 1, Col::white);
   }
 }
 
+void Model::loadnrm() {
+  const std::wstring nrmfname = name + L"_nm_tangent.tga";
+  normal = TGAImage::load(nrmfname);
+  if (!texture.good) {
+    normal = Image::solidColor(1, 1, {127, 127, 255});
+  }
+  calctan();
+}
+
+void Model::calctan() {
+  for (auto &tr : trs) {
+    Vertex &vx0 = tr[0];
+    Vertex &vx1 = tr[1];
+    Vertex &vx2 = tr[2];
+
+    const vec2f duv1 = vx1.tex - vx0.tex;
+    const vec2f duv2 = vx2.tex - vx0.tex;
+    const vec3f e1 = vx1.pos - vx0.pos;
+    const vec3f e2 = vx2.pos - vx0.pos;
+
+    const float rdet = 1.f / (duv1.u * duv2.v - duv2.u * duv1.v);
+    vec3f tan{(duv2.v * e1.x - duv1.v * e2.x) * rdet,
+              (duv2.v * e1.y - duv1.v * e2.y) * rdet,
+              (duv2.v * e1.z - duv1.v * e2.z) * rdet};
+    tan = tan.normal();
+    vx0.nrm = vx0.nrm.normal();
+    vx1.nrm = vx1.nrm.normal();
+    vx2.nrm = vx2.nrm.normal();
+
+    vx0.tan = (tan - tan.dot(vx0.nrm) * vx0.nrm).normal();
+    vx1.tan = (tan - tan.dot(vx1.nrm) * vx1.nrm).normal();
+    vx2.tan = (tan - tan.dot(vx2.nrm) * vx2.nrm).normal();
+  }
+}

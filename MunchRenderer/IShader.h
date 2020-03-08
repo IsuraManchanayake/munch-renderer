@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vertex.h"
+#include "Matrix.h"
 
 struct Image;
 
@@ -21,9 +22,12 @@ struct FragShaderOutput {
 
 struct IShader {
   const Image *texture;
+  const Image *normal;
   size_t width;
   size_t height;
-  std::array<Vertex, 3> tri;
+  std::array<Vertex, 3> triview;
+  std::array<Vertex, 3> triorig;
+  mat4f tbn;
 
   IShader();
   IShader(size_t width, size_t height);
@@ -33,6 +37,7 @@ struct IShader {
   virtual FragShaderOutput frag(float r0, float r1, float r2) = 0;
 
   void attachTexture(Image *texture);
+  void attachNormal(Image *normal);
   Vertex computeFragVert(float r0, float r1, float r2) const;
 };
 

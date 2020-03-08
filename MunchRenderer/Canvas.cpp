@@ -166,6 +166,7 @@ void Canvas::triangle(int x0, int y0, int x1, int y1, int x2, int y2,
 void Canvas::model(const std::wstring &name, IShader *shader) {
   Model *model = Model::loadModel(name);
   shader->attachTexture(&model->texture);
+  shader->attachNormal(&model->normal);
   for (auto &tr : model->trs) {
     triangle(tr[0], tr[1], tr[2], shader);
   }
